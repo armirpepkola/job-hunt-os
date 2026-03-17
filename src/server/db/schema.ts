@@ -19,18 +19,20 @@ export const stageEnum = pgEnum("job_stage", [
   "rejected",
 ]);
 
-// 1. The Job (Aggregate Root)
 export const jobs = pgTable("jobs", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").notNull(),
   company: varchar("company", { length: 255 }).notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   currentStage: stageEnum("current_stage").default("bookmarked").notNull(),
+
+  resumePath: text("resume_path"),
+  coverLetterPath: text("cover_letter_path"),
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// 2. The Timeline (Event Sourcing Pattern)
 export const stageEvents = pgTable("stage_events", {
   id: uuid("id").primaryKey().defaultRandom(),
   jobId: uuid("job_id")
@@ -41,7 +43,6 @@ export const stageEvents = pgTable("stage_events", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// 3. Drizzle Relations (For Type-Safe nested queries later)
 export const jobsRelations = relations(jobs, ({ many }) => ({
   stageEvents: many(stageEvents),
 }));
