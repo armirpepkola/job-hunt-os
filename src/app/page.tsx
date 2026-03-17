@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { JobDashboard } from "@/features/jobs/components/job-dashboard";
+import { BoardSkeleton } from "@/features/jobs/components/board-skeleton";
 import { Header } from "@/components/layout/header";
 
 export default function Home() {
@@ -6,7 +8,9 @@ export default function Home() {
     <div className="min-h-screen bg-zinc-50 flex flex-col">
       <Header />
       <main className="flex-1 overflow-hidden">
-        <JobDashboard />
+        <Suspense fallback={<BoardSkeleton />}>
+          <JobDashboard />
+        </Suspense>
       </main>
     </div>
   );

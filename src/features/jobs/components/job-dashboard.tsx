@@ -39,7 +39,7 @@ const COLUMNS = stageEnum.enumValues;
 
 export function JobDashboard() {
   const isMounted = useMounted();
-  const { data: jobs, isLoading } = useJobs();
+  const { data: jobs } = useJobs();
   const createJob = useCreateJob();
   const updateStage = useUpdateJobStage();
   const openInspector = useJobStore((state) => state.openInspector);
@@ -73,13 +73,7 @@ export function JobDashboard() {
     }
   }
 
-  if (!isMounted || isLoading) {
-    return (
-      <div className="max-w-7xl mx-auto p-6 space-y-8 flex flex-col h-[calc(100vh-4rem)]">
-        <p className="text-zinc-500 animate-pulse">Loading pipeline...</p>
-      </div>
-    );
-  }
+  if (!isMounted) return null;
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-8 flex flex-col h-[calc(100vh-4rem)]">
