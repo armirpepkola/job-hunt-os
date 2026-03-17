@@ -1,16 +1,10 @@
 "use server";
 
 import { db } from "@/server/db";
-import { jobs, stageEvents, stageEnum } from "@/server/db/schema";
-import { z } from "zod";
+import { jobs, stageEvents } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
-
-// 1. Strict Runtime Validation Schema
-const createJobSchema = z.object({
-  company: z.string().min(1, "Company name is required").max(255),
-  title: z.string().min(1, "Job title is required").max(255),
-  stage: z.enum(stageEnum.enumValues).default("bookmarked"),
-});
+import { z } from "zod";
+import { createJobSchema, updateJobStageSchema } from "./schema";
 
 // Temporary dummy user ID until we implement Auth
 const DUMMY_USER_ID = "00000000-0000-0000-0000-000000000000";
@@ -66,5 +60,36 @@ export async function getJobsAction() {
   } catch (error) {
     console.error("Failed to fetch jobs:", error);
     return { data: null, error: "Failed to load your job board." };
+  }
+}
+
+export async function updateJobStageAction(
+  input: z.infer<typeof updateJobStageSchema>,
+) {
+  try {
+    const parsed = updateJobStageSchema.parse(input);
+
+    const updatedJob = await db.transaction(async (tx) => {
+      const [job] = await tx
+        .update(jobs)
+        .set({ currentStage: parsed.stage, updatedAt: new Date() })
+        .where(eq(jobs.id, parsed.jobId))
+        .returning();
+
+      if (!job) throw new Error("Job not found");
+
+      await tx.insert(stageEvents).values({
+        jobId: job.id,
+        stage: parsed.stage,
+        notes: `Moved to ${parsed.stage}`,
+      });
+
+      return job;
+    });
+
+    return { data: updatedJob, error: null };
+  } catch (error) {
+    console.error("Failed to update job stage:", error);
+    return { data: null, error: "Failed to update pipeline stage." };
   }
 }
