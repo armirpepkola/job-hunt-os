@@ -71,7 +71,6 @@ export function useUpdateJobStage() {
 
       return { previousJobs };
     },
-    // FIX UNUSED VARS
     onError: (err, newStageData, context) => {
       console.error(
         `[Rollback] Failed to update job ${newStageData.jobId}:`,
@@ -82,6 +81,22 @@ export function useUpdateJobStage() {
       }
     },
     onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: jobKeys.lists() });
+    },
+  });
+}
+
+export function useUploadDocument() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (formData: FormData) => {
+      const { uploadDocumentAction } = await import("./actions");
+      const { data, error } = await uploadDocumentAction(formData);
+      if (error) throw new Error(error);
+      return data;
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: jobKeys.lists() });
     },
   });

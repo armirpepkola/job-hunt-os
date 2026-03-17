@@ -107,3 +107,73 @@ export async function updateJobStageAction(
     return { data: null, error: "Failed to update pipeline stage." };
   }
 }
+
+export async function uploadDocumentAction(formData: FormData) {
+  try {
+    const userId = await requireAuth();
+    const jobId = formData.get("jobId") as string;
+    const file = formData.get("file") as File;
+    const docType = formData.get("type") as "resumePath" | "coverLetterPath";
+
+    if (!jobId || !file || file.size === 0)
+      return { error: "Missing file or job ID", data: null };
+
+    // 1. Verify Ownership (Zero-Trust)
+    const [job] = await db
+      .select()
+      .from(jobs)
+      .where(and(eq(jobs.id, jobId), eq(jobs.userId, userId)));
+    if (!job) return { error: "Unauthorized", data: null };
+
+    // 2. Upload to Supabase Storage
+    const supabase = await createClient();
+    const fileExt = file.name.split(".").pop();
+    // Path structure: {userId}/{jobId}/resumePath-1710000000.pdf
+    const filePath = `${userId}/${jobId}/${docType}-${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("documents")
+      .upload(filePath, file);
+
+    if (uploadError) throw new Error(uploadError.message);
+
+    // 3. Update the Database Pointer & Timeline
+    const updatedJob = await db.transaction(async (tx) => {
+      const [updated] = await tx
+        .update(jobs)
+        .set({ [docType]: filePath, updatedAt: new Date() })
+        .where(eq(jobs.id, jobId))
+        .returning();
+
+      await tx.insert(stageEvents).values({
+        jobId: jobId,
+        stage: job.currentStage,
+        notes: `Attached a new ${docType === "resumePath" ? "Resume" : "Cover Letter"}.`,
+      });
+
+      return updated;
+    });
+
+    return { data: updatedJob, error: null };
+  } catch (error) {
+    console.error("Upload failed:", error);
+
+    const message =
+      error instanceof Error
+        ? error.message
+        : "An unexpected error occurred during upload.";
+
+    return { error: message, data: null };
+  }
+}
+
+export async function getDocumentUrlAction(path: string) {
+  const supabase = await createClient();
+  // Generate a signed URL valid for exactly 60 seconds
+  const { data, error } = await supabase.storage
+    .from("documents")
+    .createSignedUrl(path, 60);
+
+  if (error) return { error: error.message, data: null };
+  return { data: data.signedUrl, error: null };
+}
