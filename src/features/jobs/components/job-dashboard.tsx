@@ -52,7 +52,7 @@ export function JobDashboard() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-8 flex flex-col h-screen">
+    <div className="max-w-7xl mx-auto p-6 space-y-8 flex flex-col h-[calc(100vh-4rem)]">
       {/* The Creation Form */}
       <Card className="shrink-0">
         <CardHeader>
