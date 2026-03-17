@@ -5,6 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { createJobSchema } from "../schema";
 import { useJobs, useCreateJob, useUpdateJobStage } from "../queries";
+import { useJobStore } from "../store";
+import { JobInspector } from "./job-inspector";
 
 // Shadcn UI Imports
 import { Button } from "@/components/ui/button";
@@ -26,13 +28,13 @@ import {
 } from "@/components/ui/select";
 import { stageEnum } from "@/server/db/schema";
 
-// The visual order of our Kanban columns
 const COLUMNS = stageEnum.enumValues;
 
 export function JobDashboard() {
   const { data: jobs, isLoading } = useJobs();
   const createJob = useCreateJob();
-  const updateStage = useUpdateJobStage(); // <-- Our optimistic hook
+  const updateStage = useUpdateJobStage();
+  const openInspector = useJobStore((state) => state.openInspector);
 
   const form = useForm<z.infer<typeof createJobSchema>>({
     resolver: zodResolver(createJobSchema),
@@ -51,7 +53,7 @@ export function JobDashboard() {
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-8 flex flex-col h-screen">
-      {/* 1. The Creation Form */}
+      {/* The Creation Form */}
       <Card className="shrink-0">
         <CardHeader>
           <CardTitle>Add New Application</CardTitle>
@@ -97,7 +99,7 @@ export function JobDashboard() {
         </CardContent>
       </Card>
 
-      {/* 2. The Kanban Board */}
+      {/* The Kanban Board */}
       <div className="flex-1 overflow-x-auto pb-4">
         {isLoading ? (
           <p className="text-zinc-500 animate-pulse">Loading pipeline...</p>
@@ -108,7 +110,6 @@ export function JobDashboard() {
         ) : (
           <div className="flex gap-4 h-full min-w-max">
             {COLUMNS.map((stage) => {
-              // React 19 Compiler memoizes this filter automatically!
               const columnJobs =
                 jobs?.filter((job) => job.currentStage === stage) || [];
 
@@ -130,7 +131,8 @@ export function JobDashboard() {
                     {columnJobs.map((job) => (
                       <Card
                         key={job.id}
-                        className="cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
+                        onClick={() => openInspector(job.id)}
+                        className="cursor-pointer hover:shadow-md transition-shadow hover:border-zinc-400"
                       >
                         <CardHeader className="p-4 pb-2">
                           <CardTitle className="text-base">
@@ -139,33 +141,35 @@ export function JobDashboard() {
                           <p className="text-sm text-zinc-500">{job.title}</p>
                         </CardHeader>
                         <CardContent className="p-4 pt-0">
-                          {/* The Stage Mutation Trigger */}
-                          <Select
-                            value={job.currentStage}
-                            onValueChange={(newStage) => {
-                              // Type cast is safe here because the Select items are generated from the exact enum
-                              updateStage.mutate({
-                                jobId: job.id,
-                                stage:
-                                  newStage as (typeof stageEnum.enumValues)[number],
-                              });
-                            }}
-                          >
-                            <SelectTrigger className="h-8 text-xs mt-2 w-full">
-                              <SelectValue placeholder="Move to..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {COLUMNS.map((col) => (
-                                <SelectItem
-                                  key={col}
-                                  value={col}
-                                  className="text-xs"
-                                >
-                                  {col.replace("_", " ")}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <div onClick={(e) => e.stopPropagation()}>
+                            {/* The Stage Mutation Trigger */}
+                            <Select
+                              value={job.currentStage}
+                              onValueChange={(newStage) => {
+                                // Type cast is safe here because the Select items are generated from the exact enum
+                                updateStage.mutate({
+                                  jobId: job.id,
+                                  stage:
+                                    newStage as (typeof stageEnum.enumValues)[number],
+                                });
+                              }}
+                            >
+                              <SelectTrigger className="h-8 text-xs mt-2 w-full">
+                                <SelectValue placeholder="Move to..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {COLUMNS.map((col) => (
+                                  <SelectItem
+                                    key={col}
+                                    value={col}
+                                    className="text-xs"
+                                  >
+                                    {col.replace("_", " ")}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </CardContent>
                       </Card>
                     ))}
@@ -176,6 +180,7 @@ export function JobDashboard() {
           </div>
         )}
       </div>
+      <JobInspector />
     </div>
   );
 }
