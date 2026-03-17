@@ -12,7 +12,12 @@ import {
 import { useMounted } from "@/hooks/use-mounted";
 
 import { createJobSchema } from "../schema";
-import { useJobs, useCreateJob, useUpdateJobStage } from "../queries";
+import {
+  useJobs,
+  useCreateJob,
+  useUpdateJobStage,
+  useParseJob,
+} from "../queries";
 import { useJobStore } from "../store";
 import { JobInspector } from "./job-inspector";
 import { stageEnum } from "@/server/db/schema";
@@ -35,6 +40,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { useRef } from "react";
+import { Sparkles, Loader2 } from "lucide-react";
+
 const COLUMNS = stageEnum.enumValues;
 
 export function JobDashboard() {
@@ -43,6 +51,20 @@ export function JobDashboard() {
   const createJob = useCreateJob();
   const updateStage = useUpdateJobStage();
   const openInspector = useJobStore((state) => state.openInspector);
+
+  const parseJob = useParseJob();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAIParsing = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+    parseJob.mutate(formData);
+
+    if (fileInputRef.current) fileInputRef.current.value = ""; // Reset input
+  };
 
   const form = useForm<z.infer<typeof createJobSchema>>({
     resolver: zodResolver(createJobSchema),
@@ -115,9 +137,37 @@ export function JobDashboard() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" disabled={createJob.isPending}>
-                {createJob.isPending ? "Adding..." : "Add Job"}
-              </Button>
+              <div className="flex gap-2 shrink-0">
+                <Button
+                  type="submit"
+                  variant="secondary"
+                  disabled={createJob.isPending}
+                >
+                  {createJob.isPending ? "Adding..." : "Manual Add"}
+                </Button>
+
+                {/* The Magic AI Upload Button */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleAIParsing}
+                  className="hidden"
+                  accept="application/pdf"
+                />
+                <Button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={parseJob.isPending}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                  {parseJob.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-4 h-4 mr-2" />
+                  )}
+                  Auto-Parse PDF
+                </Button>
+              </div>
             </form>
           </Form>
         </CardContent>

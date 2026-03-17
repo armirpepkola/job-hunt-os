@@ -101,3 +101,19 @@ export function useUploadDocument() {
     },
   });
 }
+
+export function useParseJob() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (formData: FormData) => {
+      const { parseJobDescriptionAction } = await import("./ai-actions");
+      const { data, error } = await parseJobDescriptionAction(formData);
+      if (error) throw new Error(error);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: jobKeys.lists() });
+    },
+  });
+}

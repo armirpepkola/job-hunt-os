@@ -61,7 +61,7 @@ export function JobInspector() {
       open={!!selectedJobId}
       onOpenChange={(open) => !open && closeInspector()}
     >
-      <SheetContent className="sm:max-w-md overflow-y-auto">
+      <SheetContent className="sm:max-w-md overflow-y-auto pl-5">
         <SheetHeader className="mb-6">
           <SheetTitle className="text-2xl">{job?.company}</SheetTitle>
           <SheetDescription className="text-base">
