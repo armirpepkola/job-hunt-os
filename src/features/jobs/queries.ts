@@ -5,6 +5,10 @@ import {
   updateJobStageAction,
 } from "./actions";
 
+type JobBoardData = NonNullable<
+  Awaited<ReturnType<typeof getJobsAction>>["data"]
+>;
+
 export const jobKeys = {
   all: ["jobs"] as const,
   lists: () => [...jobKeys.all, "list"] as const,
@@ -48,22 +52,31 @@ export function useUpdateJobStage() {
     onMutate: async (newStageData) => {
       await queryClient.cancelQueries({ queryKey: jobKeys.lists() });
 
-      const previousJobs = queryClient.getQueryData<any[]>(jobKeys.lists());
+      // inject dynamically inferred type here.
+      const previousJobs = queryClient.getQueryData<JobBoardData>(
+        jobKeys.lists(),
+      );
 
       if (previousJobs) {
-        queryClient.setQueryData(jobKeys.lists(), (old: any[]) =>
-          old.map((job) =>
-            job.id === newStageData.jobId
-              ? { ...job, currentStage: newStageData.stage }
-              : job,
-          ),
+        queryClient.setQueryData<JobBoardData>(jobKeys.lists(), (old) =>
+          old
+            ? old.map((job) =>
+                job.id === newStageData.jobId
+                  ? { ...job, currentStage: newStageData.stage }
+                  : job,
+              )
+            : [],
         );
       }
 
       return { previousJobs };
     },
-    // 2. Rollback on Error
+    // FIX UNUSED VARS
     onError: (err, newStageData, context) => {
+      console.error(
+        `[Rollback] Failed to update job ${newStageData.jobId}:`,
+        err,
+      );
       if (context?.previousJobs) {
         queryClient.setQueryData(jobKeys.lists(), context.previousJobs);
       }
