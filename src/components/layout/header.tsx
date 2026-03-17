@@ -26,7 +26,12 @@ export async function Header() {
           </span>
 
           <form action={logoutAction}>
-            <Button variant="outline" size="sm" className="text-zinc-600">
+            <Button
+              type="submit"
+              variant="outline"
+              size="sm"
+              className="text-zinc-600"
+            >
               Sign Out
             </Button>
           </form>
