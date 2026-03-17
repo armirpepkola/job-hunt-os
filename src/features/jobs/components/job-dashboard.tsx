@@ -55,15 +55,20 @@ export function JobDashboard() {
   const parseJob = useParseJob();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleAIParsing = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAIParsing = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const formData = new FormData();
-    formData.append("file", file);
-    parseJob.mutate(formData);
+    try {
+      const { extractTextFromPdf } = await import("@/lib/pdf-loader");
 
-    if (fileInputRef.current) fileInputRef.current.value = ""; // Reset input
+      const text = await extractTextFromPdf(file);
+      parseJob.mutate(text);
+    } catch (err) {
+      console.error("Client-side PDF error:", err);
+    }
+
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const form = useForm<z.infer<typeof createJobSchema>>({

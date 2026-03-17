@@ -5,21 +5,9 @@ import { google } from "@ai-sdk/google";
 import { createJobSchema } from "./schema";
 import { createJobAction } from "./actions";
 
-// the linter disabled here because pdf-parse is a legacy CommonJS
-// package that lacks proper ES Module exports, breaking standard imports.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdfParse = require("pdf-parse");
-
-export async function parseJobDescriptionAction(formData: FormData) {
+export async function parseJobTextAction(text: string) {
   try {
-    const file = formData.get("file") as File;
-    if (!file || file.size === 0) throw new Error("No file uploaded");
-
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    const pdfData = await pdfParse(buffer);
-    const rawText = pdfData.text;
+    if (!text || text.length < 10) throw new Error("No readable text provided");
 
     const { object } = await generateObject({
       model: google("gemini-2.5-flash"),
@@ -29,11 +17,10 @@ export async function parseJobDescriptionAction(formData: FormData) {
                Always set the stage to 'bookmarked'.
                
                Job Description Text:
-               ${rawText.substring(0, 15000)}`,
+               ${text.substring(0, 15000)}`,
     });
 
     const result = await createJobAction(object);
-
     if (result.error) throw new Error(result.error);
 
     return { data: result.data, error: null };

@@ -106,9 +106,9 @@ export function useParseJob() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (formData: FormData) => {
-      const { parseJobDescriptionAction } = await import("./ai-actions");
-      const { data, error } = await parseJobDescriptionAction(formData);
+    mutationFn: async (text: string) => {
+      const { parseJobTextAction } = await import("./ai-actions");
+      const { data, error } = await parseJobTextAction(text);
       if (error) throw new Error(error);
       return data;
     },
