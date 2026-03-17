@@ -2,23 +2,33 @@
 
 import { db } from "@/server/db";
 import { jobs, stageEvents } from "@/server/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { createJobSchema, updateJobStageSchema } from "./schema";
+import { createClient } from "@/lib/supabase/server";
 
-// Temporary dummy user ID until we implement Auth
-const DUMMY_USER_ID = "00000000-0000-0000-0000-000000000000";
+// The Identity Verifier
+async function requireAuth() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+  if (error || !user) throw new Error("Unauthorized");
+  return user.id;
+}
 
-// 2. The Mutation Action
+// Create Job Mutation
 export async function createJobAction(input: z.infer<typeof createJobSchema>) {
   try {
+    const userId = await requireAuth();
     const parsed = createJobSchema.parse(input);
 
     const newJob = await db.transaction(async (tx) => {
       const [insertedJob] = await tx
         .insert(jobs)
         .values({
-          userId: DUMMY_USER_ID,
+          userId: userId, // Tied strictly to the authenticated user
           company: parsed.company,
           title: parsed.title,
           currentStage: parsed.stage,
@@ -43,11 +53,13 @@ export async function createJobAction(input: z.infer<typeof createJobSchema>) {
   }
 }
 
-// 3. The Query Action
+// Get Jobs Query
 export async function getJobsAction() {
   try {
+    const userId = await requireAuth();
+
     const userJobs = await db.query.jobs.findMany({
-      where: eq(jobs.userId, DUMMY_USER_ID),
+      where: eq(jobs.userId, userId), // Enforce Row-Level Tenant Isolation
       orderBy: (jobs, { desc }) => [desc(jobs.updatedAt)],
       with: {
         stageEvents: {
@@ -63,20 +75,22 @@ export async function getJobsAction() {
   }
 }
 
+// Update Job Stage Mutation
 export async function updateJobStageAction(
   input: z.infer<typeof updateJobStageSchema>,
 ) {
   try {
+    const userId = await requireAuth();
     const parsed = updateJobStageSchema.parse(input);
 
     const updatedJob = await db.transaction(async (tx) => {
       const [job] = await tx
         .update(jobs)
         .set({ currentStage: parsed.stage, updatedAt: new Date() })
-        .where(eq(jobs.id, parsed.jobId))
+        .where(and(eq(jobs.id, parsed.jobId), eq(jobs.userId, userId)))
         .returning();
 
-      if (!job) throw new Error("Job not found");
+      if (!job) throw new Error("Job not found or unauthorized");
 
       await tx.insert(stageEvents).values({
         jobId: job.id,
