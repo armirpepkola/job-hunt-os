@@ -28,6 +28,7 @@ export const jobs = pgTable("jobs", {
 
   resumePath: text("resume_path"),
   coverLetterPath: text("cover_letter_path"),
+  jobDescriptionPath: text("job_description_path"),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

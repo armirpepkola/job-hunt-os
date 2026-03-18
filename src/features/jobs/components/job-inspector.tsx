@@ -22,7 +22,7 @@ export function JobInspector() {
   const job = jobs?.find((j) => j.id === selectedJobId);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadType, setUploadType] = useState<
-    "resumePath" | "coverLetterPath" | null
+    "resumePath" | "coverLetterPath" | "jobDescriptionPath" | null
   >(null);
 
   // Handle the hidden file input change
@@ -43,7 +43,9 @@ export function JobInspector() {
   };
 
   // Trigger the hidden file input
-  const triggerUpload = (type: "resumePath" | "coverLetterPath") => {
+  const triggerUpload = (
+    type: "resumePath" | "coverLetterPath" | "jobDescriptionPath",
+  ) => {
     setUploadType(type);
     fileInputRef.current?.click();
   };
@@ -151,6 +153,38 @@ export function JobInspector() {
                     >
                       {uploadDoc.isPending &&
                       uploadType === "coverLetterPath" ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <UploadCloud className="w-4 h-4 mr-2" />
+                      )}
+                      Upload
+                    </Button>
+                  )}
+                </div>
+
+                {/* Job Description Row */}
+                <div className="flex items-center justify-between p-3 bg-zinc-50 border border-zinc-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm font-medium text-zinc-700">
+                    <FileText className="w-4 h-4 text-purple-500" />
+                    Job Description
+                  </div>
+                  {job.jobDescriptionPath ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleViewDocument(job.jobDescriptionPath)}
+                    >
+                      View PDF
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => triggerUpload("jobDescriptionPath")}
+                      disabled={uploadDoc.isPending}
+                    >
+                      {uploadDoc.isPending &&
+                      uploadType === "jobDescriptionPath" ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <UploadCloud className="w-4 h-4 mr-2" />

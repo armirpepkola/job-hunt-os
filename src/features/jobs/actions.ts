@@ -28,7 +28,7 @@ export async function createJobAction(input: z.infer<typeof createJobSchema>) {
       const [insertedJob] = await tx
         .insert(jobs)
         .values({
-          userId: userId, // Tied strictly to the authenticated user
+          userId: userId,
           company: parsed.company,
           title: parsed.title,
           currentStage: parsed.stage,
@@ -59,7 +59,7 @@ export async function getJobsAction() {
     const userId = await requireAuth();
 
     const userJobs = await db.query.jobs.findMany({
-      where: eq(jobs.userId, userId), // Enforce Row-Level Tenant Isolation
+      where: eq(jobs.userId, userId),
       orderBy: (jobs, { desc }) => [desc(jobs.updatedAt)],
       with: {
         stageEvents: {
@@ -113,19 +113,22 @@ export async function uploadDocumentAction(formData: FormData) {
     const userId = await requireAuth();
     const jobId = formData.get("jobId") as string;
     const file = formData.get("file") as File;
-    const docType = formData.get("type") as "resumePath" | "coverLetterPath";
+    const docType = formData.get("type") as
+      | "resumePath"
+      | "coverLetterPath"
+      | "jobDescriptionPath";
 
     if (!jobId || !file || file.size === 0)
       return { error: "Missing file or job ID", data: null };
 
-    // 1. Verify Ownership (Zero-Trust)
+    // Verify Ownership
     const [job] = await db
       .select()
       .from(jobs)
       .where(and(eq(jobs.id, jobId), eq(jobs.userId, userId)));
     if (!job) return { error: "Unauthorized", data: null };
 
-    // 2. Upload to Supabase Storage
+    // Upload to Supabase Storage
     const supabase = await createClient();
     const fileExt = file.name.split(".").pop();
     // Path structure: {userId}/{jobId}/resumePath-1710000000.pdf
@@ -137,7 +140,7 @@ export async function uploadDocumentAction(formData: FormData) {
 
     if (uploadError) throw new Error(uploadError.message);
 
-    // 3. Update the Database Pointer & Timeline
+    // Update the Database Pointer & Timeline
     const updatedJob = await db.transaction(async (tx) => {
       const [updated] = await tx
         .update(jobs)

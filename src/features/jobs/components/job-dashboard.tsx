@@ -17,6 +17,7 @@ import {
   useCreateJob,
   useUpdateJobStage,
   useParseJob,
+  useUploadDocument,
 } from "../queries";
 import { useJobStore } from "../store";
 import { JobInspector } from "./job-inspector";
@@ -53,6 +54,7 @@ export function JobDashboard() {
   const openInspector = useJobStore((state) => state.openInspector);
 
   const parseJob = useParseJob();
+  const uploadDoc = useUploadDocument();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAIParsing = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -61,9 +63,18 @@ export function JobDashboard() {
 
     try {
       const { extractTextFromPdf } = await import("@/lib/pdf-loader");
-
       const text = await extractTextFromPdf(file);
-      parseJob.mutate(text);
+
+      const newJob = await parseJob.mutateAsync(text);
+
+      if (newJob && newJob.id) {
+        const formData = new FormData();
+        formData.append("jobId", newJob.id);
+        formData.append("file", file);
+        formData.append("type", "jobDescriptionPath");
+
+        uploadDoc.mutate(formData);
+      }
     } catch (err) {
       console.error("Client-side PDF error:", err);
     }
