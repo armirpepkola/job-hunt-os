@@ -10,6 +10,12 @@
 
 🔗 **[Live Production Demo](https://jobhuntos.vercel.app/)**
 
+<br />
+<div align="center">
+  <img src="./assets/demo.gif" alt="Job Hunt OS Demonstration" width="100%" style="border-radius: 8px;" />
+</div>
+<br />
+
 ---
 
 ## The Architecture
