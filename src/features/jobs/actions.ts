@@ -128,10 +128,27 @@ export async function uploadDocumentAction(formData: FormData) {
       .where(and(eq(jobs.id, jobId), eq(jobs.userId, userId)));
     if (!job) return { error: "Unauthorized", data: null };
 
-    // Upload to Supabase Storage
+    // Initialize Supabase earlier
     const supabase = await createClient();
+
+    // If there is already a document of this type, delete it from the bucket first
+    const oldFilePath = job[docType];
+    if (oldFilePath) {
+      const { error: removeError } = await supabase.storage
+        .from("documents")
+        .remove([oldFilePath]);
+
+      if (removeError) {
+        console.error(
+          "Failed to delete old document (orphan file risk):",
+          removeError,
+        );
+      }
+    }
+    // ----------------------------------------
+
+    // Upload new file to Supabase Storage
     const fileExt = file.name.split(".").pop();
-    // Path structure: {userId}/{jobId}/resumePath-1710000000.pdf
     const filePath = `${userId}/${jobId}/${docType}-${Date.now()}.${fileExt}`;
 
     const { error: uploadError } = await supabase.storage
@@ -151,7 +168,7 @@ export async function uploadDocumentAction(formData: FormData) {
       await tx.insert(stageEvents).values({
         jobId: jobId,
         stage: job.currentStage,
-        notes: `Attached a new ${docType === "resumePath" ? "Resume" : "Cover Letter"}.`,
+        notes: `Attached a new ${docType === "resumePath" ? "Resume" : docType === "coverLetterPath" ? "Cover Letter" : "Job Description"}.`,
       });
 
       return updated;
@@ -160,12 +177,10 @@ export async function uploadDocumentAction(formData: FormData) {
     return { data: updatedJob, error: null };
   } catch (error) {
     console.error("Upload failed:", error);
-
     const message =
       error instanceof Error
         ? error.message
         : "An unexpected error occurred during upload.";
-
     return { error: message, data: null };
   }
 }

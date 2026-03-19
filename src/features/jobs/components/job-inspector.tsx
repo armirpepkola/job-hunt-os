@@ -205,13 +205,29 @@ export function JobInspector() {
                     Resume
                   </div>
                   {job.resumePath ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleViewDocument(job.resumePath)}
-                    >
-                      View PDF
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleViewDocument(job.resumePath)}
+                      >
+                        View PDF
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => triggerUpload("resumePath")}
+                        disabled={
+                          uploadDoc.isPending && uploadType === "resumePath"
+                        }
+                      >
+                        {uploadDoc.isPending && uploadType === "resumePath" ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          "Replace"
+                        )}
+                      </Button>
+                    </div>
                   ) : (
                     <Button
                       variant="outline"
@@ -236,13 +252,31 @@ export function JobInspector() {
                     Cover Letter
                   </div>
                   {job.coverLetterPath ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleViewDocument(job.coverLetterPath)}
-                    >
-                      View PDF
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleViewDocument(job.coverLetterPath)}
+                      >
+                        View PDF
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => triggerUpload("coverLetterPath")}
+                        disabled={
+                          uploadDoc.isPending &&
+                          uploadType === "coverLetterPath"
+                        }
+                      >
+                        {uploadDoc.isPending &&
+                        uploadType === "coverLetterPath" ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          "Replace"
+                        )}
+                      </Button>
+                    </div>
                   ) : (
                     <Button
                       variant="outline"
@@ -268,13 +302,33 @@ export function JobInspector() {
                     Job Description
                   </div>
                   {job.jobDescriptionPath ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleViewDocument(job.jobDescriptionPath)}
-                    >
-                      View PDF
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          handleViewDocument(job.jobDescriptionPath)
+                        }
+                      >
+                        View PDF
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => triggerUpload("jobDescriptionPath")}
+                        disabled={
+                          uploadDoc.isPending &&
+                          uploadType === "jobDescriptionPath"
+                        }
+                      >
+                        {uploadDoc.isPending &&
+                        uploadType === "jobDescriptionPath" ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          "Replace"
+                        )}
+                      </Button>
+                    </div>
                   ) : (
                     <Button
                       variant="outline"
