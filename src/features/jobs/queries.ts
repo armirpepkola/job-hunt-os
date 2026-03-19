@@ -117,3 +117,27 @@ export function useParseJob() {
     },
   });
 }
+
+export function useUpdateJobDetails() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      company,
+      title,
+    }: {
+      id: string;
+      company: string;
+      title: string;
+    }) => {
+      const { updateJobDetailsAction } = await import("./actions");
+      const { data, error } = await updateJobDetailsAction(id, company, title);
+      if (error) throw new Error(error);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: jobKeys.lists() });
+    },
+  });
+}

@@ -2,15 +2,9 @@
 
 import { useRef, useState } from "react";
 import { useJobStore } from "../store";
-import { useJobs, useUploadDocument } from "../queries";
+import { useJobs, useUploadDocument, useUpdateJobDetails } from "../queries";
 import { getDocumentUrlAction } from "../actions";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { FileText, UploadCloud, Loader2 } from "lucide-react";
 
@@ -18,12 +12,66 @@ export function JobInspector() {
   const { selectedJobId, closeInspector } = useJobStore();
   const { data: jobs } = useJobs();
   const uploadDoc = useUploadDocument();
+  const updateDetails = useUpdateJobDetails();
 
   const job = jobs?.find((j) => j.id === selectedJobId);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadType, setUploadType] = useState<
     "resumePath" | "coverLetterPath" | "jobDescriptionPath" | null
   >(null);
+
+  // Local state for inline editing ---
+  const [isEditingCompany, setIsEditingCompany] = useState(false);
+  const [companyValue, setCompanyValue] = useState("");
+
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleValue, setTitleValue] = useState("");
+
+  // Render-Phase State Update ---
+  const [activeJobId, setActiveJobId] = useState(selectedJobId);
+
+  // If the user selects a different job, reset the local state instantly
+  if (selectedJobId !== activeJobId) {
+    setActiveJobId(selectedJobId);
+    if (job) {
+      setCompanyValue(job.company);
+      setTitleValue(job.title);
+    }
+    setIsEditingCompany(false);
+    setIsEditingTitle(false);
+  }
+  // --------------------------------------
+
+  // Handle Save: Company
+  const handleSaveCompany = () => {
+    setIsEditingCompany(false);
+    if (!job) return;
+    if (companyValue.trim() !== "" && companyValue !== job.company) {
+      updateDetails.mutate({
+        id: job.id,
+        company: companyValue.trim(),
+        title: job.title,
+      });
+    } else {
+      setCompanyValue(job.company);
+    }
+  };
+
+  // Handle Save: Title
+  const handleSaveTitle = () => {
+    setIsEditingTitle(false);
+    if (!job) return;
+    if (titleValue.trim() !== "" && titleValue !== job.title) {
+      updateDetails.mutate({
+        id: job.id,
+        company: job.company,
+        title: titleValue.trim(),
+      });
+    } else {
+      setTitleValue(job.title);
+    }
+  };
+  // ------------------------------------------
 
   // Handle the hidden file input change
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,12 +112,63 @@ export function JobInspector() {
       onOpenChange={(open) => !open && closeInspector()}
     >
       <SheetContent className="sm:max-w-md overflow-y-auto pl-5">
+        {/* REPLACED: Interactive Sheet Header */}
         <SheetHeader className="mb-6">
-          <SheetTitle className="text-2xl">{job?.company}</SheetTitle>
-          <SheetDescription className="text-base">
-            {job?.title}
-          </SheetDescription>
+          <div className="space-y-1 mt-6">
+            {/* Company Edit Toggle */}
+            {isEditingCompany ? (
+              <input
+                autoFocus
+                className="text-2xl font-bold bg-zinc-100 border-none outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1 w-full text-zinc-900"
+                value={companyValue}
+                onChange={(e) => setCompanyValue(e.target.value)}
+                onBlur={handleSaveCompany}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSaveCompany();
+                  if (e.key === "Escape" && job) {
+                    setIsEditingCompany(false);
+                    setCompanyValue(job.company);
+                  }
+                }}
+              />
+            ) : (
+              <h2
+                className="text-2xl font-bold text-zinc-900 cursor-pointer hover:bg-zinc-100 px-2 py-1 rounded transition-colors -ml-2"
+                onClick={() => setIsEditingCompany(true)}
+                title="Click to edit"
+              >
+                {job?.company}
+              </h2>
+            )}
+
+            {/* Title Edit Toggle */}
+            {isEditingTitle ? (
+              <input
+                autoFocus
+                className="text-base text-zinc-600 bg-zinc-100 border-none outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1 w-full"
+                value={titleValue}
+                onChange={(e) => setTitleValue(e.target.value)}
+                onBlur={handleSaveTitle}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSaveTitle();
+                  if (e.key === "Escape" && job) {
+                    setIsEditingTitle(false);
+                    setTitleValue(job.title);
+                  }
+                }}
+              />
+            ) : (
+              <p
+                className="text-base text-zinc-600 cursor-pointer hover:bg-zinc-100 px-2 py-1 rounded transition-colors -ml-2"
+                onClick={() => setIsEditingTitle(true)}
+                title="Click to edit"
+              >
+                {job?.title}
+              </p>
+            )}
+          </div>
         </SheetHeader>
+        {/* ------------------------------------------ */}
 
         {job && (
           <div className="space-y-8">

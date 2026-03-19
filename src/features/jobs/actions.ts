@@ -180,3 +180,30 @@ export async function getDocumentUrlAction(path: string) {
   if (error) return { error: error.message, data: null };
   return { data: data.signedUrl, error: null };
 }
+
+export async function updateJobDetailsAction(
+  id: string,
+  company: string,
+  title: string,
+) {
+  try {
+    const [updatedJob] = await db
+      .update(jobs)
+      .set({
+        company,
+        title,
+        updatedAt: new Date(),
+      })
+      .where(eq(jobs.id, id))
+      .returning();
+
+    if (!updatedJob) throw new Error("Job not found");
+
+    return { data: updatedJob, error: null };
+  } catch (error) {
+    console.error("Failed to update job details:", error);
+    const message =
+      error instanceof Error ? error.message : "Failed to update details";
+    return { data: null, error: message };
+  }
+}
