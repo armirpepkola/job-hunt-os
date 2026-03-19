@@ -168,7 +168,7 @@ export async function uploadDocumentAction(formData: FormData) {
       await tx.insert(stageEvents).values({
         jobId: jobId,
         stage: job.currentStage,
-        notes: `Attached a new ${docType === "resumePath" ? "Resume" : docType === "coverLetterPath" ? "Cover Letter" : "Job Description"}.`,
+        notes: `Uploaded ${docType === "resumePath" ? "resume" : docType === "coverLetterPath" ? "cover letter" : "job description"}`,
       });
 
       return updated;

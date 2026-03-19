@@ -359,7 +359,7 @@ export function JobInspector() {
                   <div key={event.id} className="relative">
                     <div className="absolute -left-5.25 top-1.5 h-2.5 w-2.5 rounded-full bg-zinc-400 border-2 border-white" />
                     <p className="text-sm font-medium text-zinc-900">
-                      {event.notes?.includes("Uploaded")
+                      {event.notes
                         ? event.notes
                         : `Moved to ${event.stage.replace("_", " ")}`}
                     </p>
